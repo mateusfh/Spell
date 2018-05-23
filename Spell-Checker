@@ -1,18 +1,145 @@
+//???????????????????????????????????????????????????????????????????????????
+//=========== PROBLEMA NA GRAVAÇÃO DO ASCII DA PALAVRA E DA CHAVE ===========
+//???????????????????????????????????????????????????????????????????????????
+
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
+#define MAX_ARRAYSIZE 50
 
-int main (void) {
+/* =========== COMO FUNCIONA A GERAÇÃO DA CHAVE NA FUNÇÃO HASH ==============
+A   -   M   -   O   -   R
+65      77      79      82 --->h(481) = 1
+R   -   O   -   M   -   A
+82      79      77      65  ---->h() = 3
+A     -   B   -   C   -   D
+65        66      67      68 ---->h() = 404
+D     -   C   -   B   -   A
+68        67      66      65 ---->h() = 404
+*/
 
+//============================================================================
+//======================= FUNÇÃO PARA GRAVAR NO ARQUIVO ======================
+//============================================================================
 
+void GravaArquivo(char *pointer2string)
+{
+   FILE *txt;
+   char linhacriada [100];
+   int resultGrav;
 
+   txt = fopen("TextoCriado.txt", "wt");
 
+   if(txt == NULL) //Se não conseguiu criar retorna NULL
+   {
+       char ErroCriacao[50] = "Problemas na criação do arquivo";
+       puts(ErroCriacao);
 
+        exit(0);
+   }
 
+   strcpy(linhacriada, "\n");
+   strcpy(linhacriada, pointer2string);
 
+   resultGrav = fputs(linhacriada,txt);
 
+   if(resultGrav == EOF) // Caso não seja executada com sucesso, retorna a constante EOF
+    {
+        char ErroGrav [50] = "Erro na Gravação";
+        puts(ErroGrav);
 
-
-
-
-return 0;
+        exit(0);
+    }
+    fclose(txt);
 }
+
+//============================================================================
+//============================ FUNÇÃO DE HASH ================================
+//============================================================================
+
+int hashfunction(char *palavra)
+{
+    int k = 0, i = 0;
+    char *pointer2int = malloc (sizeof(int));
+
+    while (palavra[i] != '\n')
+    {
+	if(palavra[i] - 65 == 0 || palavra[i] - 69 == 0 || palavra[i] - 73 == 0 || palavra[i] - 79 == 0 || palavra[i] - 85 == 0)
+	{
+		k = (i * 7) * palavra[i] + k;
+		i++;
+	}else
+	{
+		k = (i * 3)  * palavra[i] + k;		
+		i++;  
+        }	
+        
+    }
+
+    printf("\n");
+
+    *pointer2int = strlen(palavra);
+
+    GravaArquivo(pointer2int);
+
+    k = k % (strlen(palavra)*17);
+
+    *pointer2int = k;
+
+    GravaArquivo(pointer2int);
+
+return k;
+}
+
+//============================================================================
+//============================ FUNÇÃO DE LEITURA =============================
+//============================================================================
+
+void LeiaDictionary()
+{
+    FILE *txt;
+    char linhas [100];
+    char *result;
+    int cont = 1, key;
+
+    txt = fopen("ascii_noaccent_noduplicates_FIXED_v2.txt", "rt");
+
+    if(txt == NULL) // Se não conseguir abrir o arquivo, retorna NULL
+    {
+        char ErroLeitura[50] = "Problemas na abertura do arquivo";
+        puts(ErroLeitura);
+        
+        exit(0);
+    }
+
+    while(!feof(txt)) // Se não chegar ao final do texto, feof retorna zero.
+    {
+        result = fgets(linhas, 100, txt);
+
+        key = hashfunction(linhas);
+
+        if(result) // Se não conseguir ler o arquivo, fgets retorna NULL
+        {
+            printf("Linha[%d] : %s", cont, linhas);
+            printf("O valor de key = %d\n", key);
+            cont++;
+        }
+    }
+    fclose(txt);
+}
+
+//===========================================================================
+//========================  FUNÇÃO PRINCIPAL ================================
+//===========================================================================
+
+void main () {
+
+    char string [MAX_ARRAYSIZE];
+    char *ps;
+
+    LeiaDictionary();
+
+}
+
+   
