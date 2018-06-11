@@ -1,23 +1,28 @@
-
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
 #include <sys/timeb.h>
-#define MAX_ARRAYSIZE 50
+
+#define MAX_ARRAYSIZE 100
 #define MICRO_PER_SECOND 1000000 
 // Os 1000000 e so porque quero que os milisegundos aparecam como decimal dos segundos
 // o membro tv_use da struct timeval vem em microsegundos
 
 /* =========== COMO FUNCIONA A GERAÇÃO DA CHAVE NA FUNÇÃO HASH ==============
+
 A   -   M   -   O   -   R
 65      77      79      82 --->h(481) = 1
+
+
 R   -   O   -   M   -   A
 82      79      77      65  ---->h() = 3
+
 A     -   B   -   C   -   D
 65        66      67      68 ---->h() = 404
+
 D     -   C   -   B   -   A
 68        67      66      65 ---->h() = 404
+
 */
 
 //============================================================================
@@ -33,6 +38,10 @@ struct No
 };
 
 typedef struct No *HashTable [513]; // 513 é o número de buckets
+float TempoVerificacao = 0.0f;
+int nroTotalPalavrasTexto = 0;
+int nroPalavrasErro = 0;
+int linhaErro, colunaErro;
 
 void InicioTabela(HashTable h) // Resetando a tabela para NULL
 {
@@ -172,7 +181,7 @@ void InserirPalavraTabela(HashTable h,char *palavraCopia)
 //============================ FUNÇÃO DE LEIADICTIONARY ======================
 //============================================================================
 
-void LeiaDictionary()
+void LeiaDictionary(HashTable h)
 {
     FILE *txt;
     char linhas [100];
@@ -200,9 +209,33 @@ void LeiaDictionary()
             //printf("Linha[%d] : %s", cont, linhas);
             //printf("O valor de key = %d\n", key);
             cont++;
+            InserirPalavraTabela(h, linhas);
         }
     }
     fclose(txt);
+}
+
+//============================================================================
+//============================ FUNÇÃO DE CONSULTA ============================
+//============================================================================
+
+void ConsultaFrase (HashTable h, char *frase){
+	int b = 0, nroErro = 0;
+	b = Hashfunction (frase);
+
+	while( b == h[b]->chaveNo && ( strcmp(frase, h[b]->palavraNo) != 0 ) && h[b]->next != NULL)
+		h[b] = h[b]->next;
+
+	if(b == h[b]->chaveNo && ( strcmp(frase, h[b]->palavraNo) != 0) ) // Caso Falha
+	{
+	linhaErro;
+	colunaErro;
+        nroErro++;
+        nroPalavrasErro = nroErro;
+        //Chamar a função GravarArquivo
+	}
+
+    
 }
 
 //============================================================================
@@ -212,15 +245,15 @@ void LeiaDictionary()
 void LeiaTextoCriado(HashTable h)
 {
     FILE *txt;
-    char linhas [100];
+    char linhas [100][100];
     char *result;
-    int cont = 1, key;
+    int cont = 1, key, i, j;
 
     txt = fopen("TextoCriado.txt", "rt");
 
     if(txt == NULL) // Se não conseguir abrir o arquivo, retorna NULL
     {
-        char ErroLeitura[50] = "Problemas na abertura do arquivo";
+        char ErroLeitura[35] = "Problemas na abertura do arquivo";
         puts(ErroLeitura);
         
         exit(0);
@@ -228,71 +261,55 @@ void LeiaTextoCriado(HashTable h)
 
     while(!feof(txt)) // Se não chegar ao final do texto, feof retorna zero.
     {
-        result = fgets(linhas, 100, txt);
+	 for (i = 1; i <= MAX_ARRAYSIZE; i++){
+	 for (j = 1; j <= MAX_ARRAYSIZE; j++){
+	linhaErro = i;
+	colunaErro = j;
+	result = fscanf (txt, "%s", &linhas[i][j]);
+        //result = fgets(linhas[i][j], MAX_ARRAYSIZE, txt);
 
-        ConsultaFrase(h, linhas); 
-
+	}
+}
         if(result) // Se não conseguir ler o arquivo, fgets retorna NULL
         {
             //printf("Linha[%d] : %s", cont, linhas);
             //printf("O valor de key = %d\n", key);
             cont++;
+            nroTotalPalavrasTexto = cont;
+            ConsultaFrase(h, linhas[i][j]); 
         }
     }
     fclose(txt);
+
+    cont; // indice da palavra
 }
 
 
-//============================================================================
-//============================ FUNÇÃO DE CONSULTA ============================
-//============================================================================
-
-void ConsultaFrase (HashTable h, char frase){
-	int b = 0, falhas = 0;
-	b = Hashfunction (frase);
-
-	while (b == h[b]->chaveNo &&  (strcmp(h[b]->palavraNo, frase) != 0) ) 
-		h[b] = h[b]->next;
-
-	if(b == h[b]->chaveNo && (strcmp(h[b]->palavraNo, frase) == 0) ) // Caso Sucesso
-		return 1;	
-	else
-	{
-		falhas++;
-		return 0;
-
-	}
-}
 
 //============================================================================
 //============================ FUNÇÃO TIMER ==================================
 //============================================================================
 
 
-float Timer(int argc, char* argv[])
+int Timer(HashTable h)
 {
     struct timeval start_time;
     struct timeval stop_time;
-    float time_diff, x;
+    float time_diff;
+
 
     gettimeofday( &start_time, NULL );
-    //LeiaDictionary(); // qualquer coisa que queiram medir    
+     LeiaTextoCriado(h);// qualquer coisa que queiram medir(só uma função)    
     gettimeofday( &stop_time, NULL );
 
      time_diff = (float)(stop_time.tv_sec - start_time.tv_sec);
      time_diff += (stop_time.tv_usec - start_time.tv_usec)/(float)MICRO_PER_SECOND; 
-     printf("\n Funcao executada em %f ms\n", time_diff);
-	x = time_diff;
+     printf("\nfuncao executada em %f ms\n",time_diff);
 
-return x;
+    TempoVerificacao = time_diff;
+    return 0;
+
 }
-
-//============================================================================
-//====================== FUNÇÃO ImprimeTexto =================================
-//============================================================================
-
-//void ImprimeTexto (*s
-
 
 //===========================================================================
 //========================  FUNÇÃO PRINCIPAL ================================
@@ -300,10 +317,6 @@ return x;
 
 void main () {
 
-    char string [MAX_ARRAYSIZE];
-    char *ps;
-
-    LeiaDictionary();
-	
+    HashTable h;
 
 }
