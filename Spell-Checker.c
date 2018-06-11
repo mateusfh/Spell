@@ -46,9 +46,9 @@ int linhaErro, colunaErro;
 void InicioTabela(HashTable h) // Resetando a tabela para NULL
 {
 	int i;
-
 	for(i = 0; i < 513; i++)
 	{	
+		//h[i] = (struct No*) malloc ( sizeof(struct No) );
 		h[i] = NULL;
 	}
 }
@@ -220,16 +220,25 @@ void LeiaDictionary(HashTable h)
 //============================================================================
 
 void ConsultaFrase (HashTable h, char *frase){
-	int b = 0, nroErro = 0;
+	int b = 0, nroErro = 0, n = 502;
 	b = Hashfunction (frase);
+	
+	if (b > 513){
+		while (h[n] != NULL){
+		h[n]++;
+	}
+		h[n] = h[b];
+	}		
 
 	while( b == h[b]->chaveNo && ( strcmp(frase, h[b]->palavraNo) != 0 ) && h[b]->next != NULL)
+	
 		h[b] = h[b]->next;
 
 	if(b == h[b]->chaveNo && ( strcmp(frase, h[b]->palavraNo) != 0) ) // Caso Falha
 	{
-	linhaErro;
-	colunaErro;
+
+	//linhaErro;
+	//colunaErro;
         nroErro++;
         nroPalavrasErro = nroErro;
         //Chamar a função GravarArquivo
@@ -317,6 +326,12 @@ int Timer(HashTable h)
 
 void main () {
 
-    HashTable h;
+HashTable *h;
 
+
+    InicioTabela(h);
+    LeiaDictionary(h);
+    LeiaTextoCriado(h);
+
+    free(h);
 }
